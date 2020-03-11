@@ -69,7 +69,8 @@ from
 base as b left join decision as d
 on d.acct_decision_id = b.acct_num
 left join letter as l
-on l.account_number = d.acct_decision_id) as t
+on l.account_number = d.acct_decision_id
+where decision_status is not null) as t
 where days_delayed > 0;
 
 -- Check the sent letters match the customers' language preferences or not, notice that
@@ -92,8 +93,31 @@ on d.acct_decision_id = l.account_number
 where decision_status is not null) as T
 where letter_code_2 <> letter_code;
 
+# Final monitoring report:
 SELECT 
 b.acct_num, b.credit_limit, b.offer_amount,
+ch.credit_limit_after - ch.credit_limit_before as increased_amount,
+ch.credit_limit_after,
 d.decision_status, d.decision_date,
 l.Letter_trigger_date, l.letter_code, l.language,
-ch.credit_limit_after
+# incorrect credit limit given:
+case when d.decision_status = "AP" and (b.credit_limit + b.offer_amount - ch.credit_limit_after) <> 0 then 'yes'
+else 'no' end as wrong_amount,
+# the letter is missing:
+case when datediff(decision_date,Letter_trigger_date) > 0 then 'yes' else 'no' 
+end as missing_letter,
+# Sent wrong letter:
+case when decision_status='DL' and language='French' and l.letter_code <> 'RE002' then 'yes'
+	 when decision_status='AP' and language='French' and l.letter_code <> 'AE002' then 'yes'
+     when decision_status='DL' and language='English' and l.letter_code <> 'RE001' then 'yes'
+     when decision_status='AP' and language='English' and l.letter_code <> 'AE001' then 'yes'
+     else 'no'
+     end as sent_wrong_letter
+from
+base as b left join decision d
+on b.acct_num = d.acct_decision_id
+left join change_record as ch
+on b.acct_num = ch.account_number
+left join letter as l
+on ch.account_number = l.account_number
+where decision_status is not null;
