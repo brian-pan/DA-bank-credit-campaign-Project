@@ -14,7 +14,6 @@ select count(*) from decision;
 select count(*) from letter;
 select count(*) from change_record;
 
-# check how many people called:
 select call_date, count(distinct acct_num) 
 from call_record 
 group by 1;
@@ -25,3 +24,24 @@ from decision group by 1;
 
 select change_date, count(*) 
 from change_record group by 1;
+
+# check how many people called:
+select c.call_date, count(distinct c.acct_num)
+from call_record as c 
+group by 1;
+
+# Does each person called only once?
+select c.call_date, count(c.acct_num), 
+count(distinct c.acct_num)
+from call_record as c
+group by 1;
+
+# Overall approval rate:
+select 
+sum(case when decision_status = 'AP' then 1 else 0 end) / count(acct_decision_id) as approval_rate
+from decision;
+
+# Overall decline rate:
+select
+sum(case when decision_status = 'DL' then 1 else 0 end) / count(acct_decision_id) as decline_rate
+from decision;
