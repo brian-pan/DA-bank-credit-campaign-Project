@@ -1,3 +1,5 @@
+The final table are shown as:
+
 acct_num,credit_limit,offer_amount,increased_amount,credit_limit_after,decision_status,decision_date,Letter_trigger_date,letter_code,language,wrong_amount,missing_letter,sent_wrong_letter
 231003253,3800,2000,2000,5800,AP,2018-05-03,2018-05-03,AE002,French,no,no,no
 231026095,3500,2000,2000,5500,AP,2018-05-19,2018-05-19,AE002,French,no,no,no
