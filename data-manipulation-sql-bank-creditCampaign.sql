@@ -45,3 +45,55 @@ from decision;
 select
 sum(case when decision_status = 'DL' then 1 else 0 end) / count(acct_decision_id) as decline_rate
 from decision;
+
+# check whether the credit limits for the customers have been changed correctly based on the offer_amount:
+SELECT t.* from 
+(select b.acct_num, b.credit_limit, b.offer_amount,
+d.decision_status, c.credit_limit_after,
+(b.credit_limit + b.offer_amount - credit_limit_after) as amount_of_mismatch
+from
+base as b left join decision as d 
+on b.acct_num = d.acct_decision_id
+left join change_record as c
+on b.acct_num = c.account_number
+where decision_status = 'AP') as t
+WHERE amount_of_mismatch <> 0;
+
+# Check the letters status:
+-- Check the letters are successfully sent or not:
+select t.* from
+(select b.acct_num, d.decision_status, d.decision_date,
+l.Letter_trigger_date, l.letter_code,
+datediff(decision_date, Letter_trigger_date) as days_delayed
+from
+base as b left join decision as d
+on d.acct_decision_id = b.acct_num
+left join letter as l
+on l.account_number = d.acct_decision_id) as t
+where days_delayed > 0;
+
+-- Check the sent letters match the customers' language preferences or not, notice that
+-- there are four types of letters (English approved/rejected, French approved/rejected): 
+select * from
+(select 
+base.acct_num, base.offer_amount, 
+d.acct_decision_id, d.decision_status,
+l.language, l.letter_code,
+case when decision_status = "AP" and language = "English" then "AE001"
+	 when decision_status = "DL" and language = "English" then "AE002"
+     when decision_status = "AP" and language = "French" then "RE001"
+     when decision_status = "DL" and language = "French" then "RE002"
+     end as letter_code_2
+from 
+base left join decision as d
+on d.acct_decision_id = base.acct_num 
+left join letter as l
+on d.acct_decision_id = l.account_number
+where decision_status is not null) as T
+where letter_code_2 <> letter_code;
+
+SELECT 
+b.acct_num, b.credit_limit, b.offer_amount,
+d.decision_status, d.decision_date,
+l.Letter_trigger_date, l.letter_code, l.language,
+ch.credit_limit_after
